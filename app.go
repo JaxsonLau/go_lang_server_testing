@@ -1,40 +1,37 @@
 package main
 
 import (
-	"embed"
-	"html/template"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"time"
 )
 
-//go:embed templates/*
-var resources embed.FS
-
-var t = template.Must(template.ParseFS(resources, "templates/*"))
 
 func main() {
+	go pingOtherServer()
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080"
+		port = "8081"
 	}
-
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		// 獲取當前 UTC 時間
-		nowUTC := time.Now().UTC()
-
-		// 轉換為香港時區時間
-		hongKongLocation, _ := time.LoadLocation("Asia/Hong_Kong")
-		nowHongKong := nowUTC.In(hongKongLocation)
-
-		data := map[string]interface{}{
-			"CurrentTime": nowHongKong.Format("2006-01-02 15:04:05"),
-		}
-
-		t.ExecuteTemplate(w, "index.html.tmpl", data)
-	})
-
 	log.Println("listening on", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
+}
+
+
+func pingOtherServer() {
+	for {
+		// Ping the other server
+		resp, err := http.Get("https://go-lang-server-testing.onrender.com/ping")
+		if err != nil {
+			fmt.Printf("Error pinging the other server: %v\n", err)
+		} else {
+			fmt.Printf("Pinged the other server, status code: %d\n", resp.StatusCode)
+			resp.Body.Close()
+		}
+
+		// Wait for 15 minutes in a separate goroutine
+		time.Sleep(10 * time.Minute)
+	}
 }
