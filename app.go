@@ -20,13 +20,14 @@ var resources embed.FS
 var t = template.Must(template.ParseFS(resources, "templates/*"))
 
 func main() {
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
-
 	http.HandleFunc("/", handleRoot)
 	http.HandleFunc("/ping", handlePing)
+	go pingMySelf(port)
 	log.Println("listening on", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
@@ -59,3 +60,15 @@ func handlePing(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonResp)
 }
 
+func pingMySelf(port string) {
+	for {
+		time.Sleep(5 * time.Minute) // 每 60 秒 ping 一次
+		resp, err := http.Get("https://go-lang-server-testing.onrender.com/ping")
+		if err != nil {
+			log.Println("Ping server error:", err)
+		} else {
+			log.Println("Ping server response:", resp.StatusCode)
+		}
+		
+	}
+}
